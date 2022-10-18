@@ -12,7 +12,7 @@ namespace ToDo.Api.Controllers
     [ApiController]
     public class UserController : ApiBaseController
     {
-        private IUserManager _userManager;
+        private readonly IUserManager _userManager;
         private readonly ILogger<UserController> _logger;
 
         public UserController(ILogger<UserController> logger, IUserManager userManager)

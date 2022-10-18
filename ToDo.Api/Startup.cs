@@ -26,9 +26,9 @@ namespace ToDo.Api
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            _mapperConfiguration = new MapperConfiguration(a =>
+            _mapperConfiguration = new MapperConfiguration(x =>
             {
-                a.AddProfile(new AutoMapperProfile());
+                x.AddProfile(new AutoMapperProfile());
             });
         }
 

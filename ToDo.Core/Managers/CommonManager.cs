@@ -10,7 +10,7 @@ namespace ToDo.Core.Managers
     public class CommonManager : ICommonManager
     {
         private readonly ToDoContext _toDoContext;
-        private IMapper _mapper;
+        private readonly IMapper _mapper;
 
         public CommonManager(ToDoContext toDoContext, IMapper mapper)
         {
@@ -20,9 +20,9 @@ namespace ToDo.Core.Managers
 
         public UserModelView GetUserRole(UserModelView user)
         {
-            var dbUser = _toDoContext.User.FirstOrDefault(a => a.Id == user.Id);
-                if(dbUser == null)
-                    throw new ServiceValidationException("Invalid user id received");
+            var dbUser = _toDoContext.User.FirstOrDefault(x => x.Id == user.Id) ??
+                    throw new ServiceValidationException("Invalid user id");
+
             return _mapper.Map<UserModelView>(dbUser);
         }
     }

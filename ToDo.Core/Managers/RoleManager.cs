@@ -16,7 +16,7 @@ namespace ToDo.Core.Managers
 
         public bool CheckAccess(UserModelView userModel)
         {
-            return _toDoContext.User.Any(a => a.Id == userModel.Id && a.IsAdmin);
+            return _toDoContext.User.Any(x => x.Id == userModel.Id && x.IsAdmin);
         }
     }
 }

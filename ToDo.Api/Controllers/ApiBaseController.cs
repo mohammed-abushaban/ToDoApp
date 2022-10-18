@@ -28,7 +28,7 @@ namespace ToDo.Api.Controllers
                     return _loggedInUser;
                 }
 
-                var ClaimId = User.Claims.FirstOrDefault(c => c.Type == "Id");
+                var ClaimId = User.Claims.FirstOrDefault(x => x.Type == "Id");
 
                 _ = int.TryParse(ClaimId.Value, out int idd);
 

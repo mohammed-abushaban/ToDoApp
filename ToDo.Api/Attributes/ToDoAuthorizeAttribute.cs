@@ -20,7 +20,7 @@ namespace ToDo.Api.Attributes
                 
                 var roleManager = context.HttpContext.RequestServices.GetService(typeof(IRoleManager)) as IRoleManager;
 
-                var stringId = context.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "Id").Value;
+                var stringId = context.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "Id").Value;
 
                 int.TryParse(stringId, out int id);
 
@@ -33,14 +33,14 @@ namespace ToDo.Api.Attributes
 
                 throw new Exception("Unauthorized");
             }
-            catch (RetryLimitExceededException ex)
+            catch (RetryLimitExceededException e)
             {
-                Log.Logger.Information(ex.Message);
+                Log.Logger.Information(e.Message);
                 throw new ServiceValidationException("An Error occurred please contact system administrator");
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException e)
             {
-                Log.Logger.Information(ex.Message);
+                Log.Logger.Information(e.Message);
                 throw new ServiceValidationException("An Error occurred please contact system administrator");
             }
             catch (DependencyResolutionException e)
@@ -48,14 +48,14 @@ namespace ToDo.Api.Attributes
                 Log.Logger.Information(e.Message);
                 throw new ServiceValidationException("An Error occurred please contact system administrator");
             }
-            catch (NullReferenceException ex)
+            catch (NullReferenceException e)
             {
-                Log.Logger.Information(ex.Message);
+                Log.Logger.Information(e.Message);
                 throw new ServiceValidationException("An Error occurred please contact system administrator");
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Log.Logger.Information(ex.Message);
+                Log.Logger.Information(e.Message);
 
                 context.Result = new UnauthorizedResult();
                 return;

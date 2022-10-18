@@ -18,7 +18,7 @@ namespace ToDo.Core.Managers
     public class UserManager : IUserManager
     {
         private readonly ToDoContext _toDoContext;
-        private IMapper _mapper;
+        private readonly IMapper _mapper;
         public UserManager(ToDoContext toDoContext, IMapper mapper)
         {
             _toDoContext = toDoContext;
@@ -27,13 +27,13 @@ namespace ToDo.Core.Managers
 
         public UserModelView GetUser(int id)
         {
-            var user = _toDoContext.User.FirstOrDefault(a => a.Id == id);
-            if(user == null)
-                 throw new ServiceValidationException("Invalid user id received");
+            var user = _toDoContext.User.FirstOrDefault(x => x.Id == id) ??
+                throw new ServiceValidationException("Invalid user id received");
+
             return _mapper.Map<UserModelView>(user);
         }
 
-        public UserResponseView GetUsers(int page = 1, int pageSize = 10, string sortColumn = "", string sortDirection = "ascending", string searchText = "")
+        public UserResponseView GetUsers(int page = 1, int pageSize = 5, string sortColumn = "", string sortDirection = "ascending", string searchText = "")
         {
             var queryRes = _toDoContext.User.Where(a => string.IsNullOrWhiteSpace(searchText)
                  || (a.FirstName.Contains(searchText)
@@ -49,17 +49,14 @@ namespace ToDo.Core.Managers
             }
 
             var res = queryRes.GetPaged(page, pageSize);
-
-            var todoIds = res.Data.Select(a => a.Id).Distinct().ToList();
-
-            var todos = _toDoContext.ToDo.Where(a => todoIds.Contains(a.AssignedId)).ToDictionary(a => a.Id, x => _mapper.Map<TodoResultView>(x));
-
+            var todoIds = res.Data.Select(x => x.Id).Distinct().ToList();
+            var todos = _toDoContext.ToDo.Where(x => todoIds.Contains(x.AssignedId))
+                .ToDictionary(y => y.Id, z => _mapper.Map<TodoResultView>(z));
             var data = new UserResponseView()
             {
                 User = _mapper.Map<PagedResult<UserModelView>>(res),
                 Todo = todos
             };
-
             data.User.Sortable.Add("Email", "Email");
             data.User.Sortable.Add("CreatedDate", "Created Date");
 
@@ -68,51 +65,48 @@ namespace ToDo.Core.Managers
 
         public LoginUserResponseView Login(UserLoginView userReg)
         {
-            var user = _toDoContext.User.FirstOrDefault(a => a.Email.Equals(userReg.Email, StringComparison.InvariantCultureIgnoreCase));
+            var user = _toDoContext.User.FirstOrDefault(x => x.Email.Equals(userReg.Email, StringComparison.InvariantCultureIgnoreCase));
 
             if (user == null || !VerifyHashPassword(userReg.Password, user.Password))
             {
                 throw new ServiceValidationException(300, "Invalid email or password");
             }
 
-            var map = _mapper.Map<LoginUserResponseView>(user);
-            map.Token = $"Bearer {GenerateJWTToken(user)}";
-            return map;
+            var result = _mapper.Map<LoginUserResponseView>(user);
+            result.Token = $"Bearer {GenerateJWTToken(user)}";
+            return result;
         }
 
         public LoginUserResponseView SignUp(UserRegisterView userReg)
         {
-            if (_toDoContext.User.Any(a => a.Email.Equals(userReg.Email,
+            if (_toDoContext.User.Any(x => x.Email.Equals(userReg.Email,
                     StringComparison.InvariantCultureIgnoreCase)))
             {
-                throw new ServiceValidationException("User Already Exist");
+                throw new ServiceValidationException("User Exist");
             }
 
             var hashedPassword = HashPassword(userReg.Password);
-
-            var user = _toDoContext.User.Add(new User
+            var userDbEntity = new User
             {
                 FirstName = userReg.FirstName,
                 LastName = userReg.LastName,
                 Email = userReg.Email,
                 Password = hashedPassword,
                 Image = string.Empty
-            }).Entity;
-
+            };
+            var user = _toDoContext.User.Add(userDbEntity).Entity;
             _toDoContext.SaveChanges();
-
-            var res = _mapper.Map<LoginUserResponseView>(user);
-            res.Token = $"Bearer {GenerateJWTToken(user)}";
-            return res;
+            var result = _mapper.Map<LoginUserResponseView>(user);
+            result.Token = $"Bearer {GenerateJWTToken(user)}";
+            return result;
         }
 
         public UserModelView UpdateProfile(UserModelView currentUser, UserModelView request)
         {
-            var user = _toDoContext.User.FirstOrDefault(a => a.Id == currentUser.Id);
-            if(user == null)
+            var user = _toDoContext.User.FirstOrDefault(x => x.Id == currentUser.Id) ??
                throw new ServiceValidationException("User not found");
-            var url = "";
 
+            var url = string.Empty;
             if (!string.IsNullOrWhiteSpace(request.ImageString))
             {
                 url = SaveFiles.SaveImage(request.ImageString, "Images/UserImages");
@@ -120,21 +114,21 @@ namespace ToDo.Core.Managers
 
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
-
             if (!string.IsNullOrWhiteSpace(url))
             {
                 var baseUrl = "https://localhost:44377";
                 user.Image = $@"{baseUrl}/api/v1/user/fileretrive/profilepic?filename={url}";
             }
+
             _toDoContext.SaveChanges();
             return _mapper.Map<UserModelView>(user);
         }
 
         public void AssignAdmin(int id)
         {
-            var user = _toDoContext.User.FirstOrDefault(a => a.Id == id);
-            if(user == null)
+            var user = _toDoContext.User.FirstOrDefault(x => x.Id == id) ??
                 throw new ServiceValidationException("User not found");
+
             user.IsAdmin = true;
             _toDoContext.SaveChanges();
         }
@@ -143,12 +137,12 @@ namespace ToDo.Core.Managers
         {
             if (currentUser.Id == id)
             {
-                throw new ServiceValidationException("You have no access to delete yourself");
+                throw new ServiceValidationException("access denied");
             }
 
-            var user = _toDoContext.User.FirstOrDefault(a => a.Id == id);
-            if(user == null)
+            var user = _toDoContext.User.FirstOrDefault(a => a.Id == id) ??
                 throw new ServiceValidationException("User not found");
+
             user.IsArchived = true;
             _toDoContext.SaveChanges();
         }
@@ -166,7 +160,7 @@ namespace ToDo.Core.Managers
 
         private string GenerateJWTToken(User user)
         {
-            var jwtKey = "#test.key*&^vanthis%$^&*()$%^@#$@!@#%$#^%&*%^*";
+            var jwtKey = "dj2oh981eoielknadasl!@E!@RW@$!ESG$#^$GQ@!EQQ";
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 

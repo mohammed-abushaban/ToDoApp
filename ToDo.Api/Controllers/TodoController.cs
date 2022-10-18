@@ -11,7 +11,7 @@ namespace ToDo.Api.Controllers
     [ApiController]
     public class TodoController : ApiBaseController
     {
-        private ITodoManager _todoManager;
+        private readonly ITodoManager _todoManager;
         private readonly ILogger<UserController> _logger;
 
         public TodoController(ITodoManager todoManager, ILogger<UserController> logger)
